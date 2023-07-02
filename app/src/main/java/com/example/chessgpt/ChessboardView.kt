@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import android.util.AttributeSet
+import android.view.MotionEvent
 import android.view.View
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.toRect
@@ -17,6 +18,11 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
     private var cellSize = 0f
     private val chessPiecePositions: MutableMap<Coordinate, Int?> = mutableMapOf()
     private var pieceSize = 0f
+    private var selectedCoordinate: Coordinate? = null
+    private var selectedPiece: Piece? = null
+    private var selectedPieceInitialCoordinate: Coordinate? = null
+    private var offsetX: Float = 0f
+    private var offsetY: Float = 0f
 
     private val pieceDrawables: Map<PieceType, Int> = mapOf(
         PieceType.WHITE_PAWN to R.drawable.white_pawn,
@@ -33,6 +39,84 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
         PieceType.BLACK_KING to R.drawable.black_king
     )
 
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> handleTouchDown(event.x, event.y)
+            MotionEvent.ACTION_MOVE -> handleTouchMove(event.x, event.y)
+            MotionEvent.ACTION_UP -> handleTouchUp()
+        }
+        return true
+    }
+
+    private fun convertToChessboardCoordinate(x: Float, y: Float): Coordinate {
+        val cellSize = measuredWidth.toFloat() / numColumns.coerceAtLeast(numRows)
+        val col = (x / cellSize).toInt()
+        val row = (y / cellSize).toInt()
+        return Coordinate(row, col)
+    }
+
+
+    private fun handleTouchDown(x: Float, y: Float) {
+        // Convert touch coordinates to chessboard coordinates
+        val coordinate = convertToChessboardCoordinate(x, y)
+
+        // Check if there is a piece at the selected coordinate
+        val piece = chessboard?.getPiece(coordinate)
+
+        if (piece != null) {
+            // Store the selected piece and its initial coordinate
+            selectedPiece = piece
+            selectedCoordinate = coordinate
+            selectedPieceInitialCoordinate = coordinate
+
+            // Calculate the offset from the touch point to the top-left corner of the piece
+            val cellSize = measuredWidth.toFloat() / numColumns.coerceAtLeast(numRows)
+            offsetX = x - coordinate.col * cellSize
+            offsetY = y - coordinate.row * cellSize
+        }
+    }
+
+    private fun isValidCoordinate(coordinate: Coordinate): Boolean {
+        val row = coordinate.row
+        val col = coordinate.col
+        return row in 0 until numRows && col in 0 until numColumns
+    }
+
+
+    private fun handleTouchMove(x: Float, y: Float) {
+        selectedCoordinate?.let {
+            // Update the position of the selected piece based on the touch coordinates and offset
+            val cellSize = measuredWidth.toFloat() / numColumns.coerceAtLeast(numRows)
+            val col = ((x - offsetX) / cellSize).toInt()
+            val row = ((y - offsetY) / cellSize).toInt()
+            val newCoordinate = Coordinate(row, col)
+
+            // Check if the new coordinate is valid and different from the initial coordinate
+            if (isValidCoordinate(newCoordinate) && newCoordinate != selectedPieceInitialCoordinate) {
+                selectedCoordinate = newCoordinate
+                invalidate()
+            }
+        }
+    }
+
+    private fun handleTouchUp() {
+        selectedPiece?.let { piece ->
+            selectedCoordinate?.let { newCoordinate ->
+                // Move the selected piece to the new coordinate
+                chessboard?.movePiece(selectedPieceInitialCoordinate!!, newCoordinate)
+
+                // Clear the selection
+                selectedPiece = null
+                selectedCoordinate = null
+                selectedPieceInitialCoordinate = null
+
+                invalidate()
+            }
+        }
+    }
+
+
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         // Calculate the size of each cell based on the available width and height
@@ -47,6 +131,35 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
         // Custom drawing code for the chessboard and pieces
         drawChessboard(canvas)
         drawChessPieces(canvas)
+        drawSelectedPiece(canvas)
+    }
+
+    private fun drawSelectedPiece(canvas: Canvas) {
+        selectedPiece?.let { piece ->
+            selectedCoordinate?.let { coordinate ->
+                // Calculate the position of the selected piece within the cell
+                val cellSize = measuredWidth.toFloat() / numColumns.coerceAtLeast(numRows)
+                val pieceLeft = coordinate.col * cellSize + (cellSize - pieceSize) / 2
+                val pieceTop = coordinate.row * cellSize + (cellSize - pieceSize) / 2
+                val pieceRight = pieceLeft + pieceSize
+                val pieceBottom = pieceTop + pieceSize
+
+                // Draw a highlight background for the selected piece
+                val highlightPaint = Paint().apply {
+                    style = Paint.Style.FILL
+                    color = ContextCompat.getColor(context, R.color.selectedPieceBackground)
+                }
+                canvas.drawRect(pieceLeft, pieceTop, pieceRight, pieceBottom, highlightPaint)
+
+                // Draw the selected chess piece on top of the highlight background
+                val drawableResId = pieceDrawables[piece.type]
+                val drawable = drawableResId?.let { ContextCompat.getDrawable(context, it) }
+                drawable?.let {
+                    it.bounds = RectF(pieceLeft, pieceTop, pieceRight, pieceBottom).toRect()
+                    it.draw(canvas)
+                }
+            }
+        }
     }
 
 

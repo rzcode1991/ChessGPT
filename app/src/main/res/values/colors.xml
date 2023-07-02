@@ -10,4 +10,5 @@
     <color name="grey">#DFDFDF</color>
     <color name="darkCellColor">#bc6c25</color>
     <color name="lightCellColor">#FFFFFFFF</color>
+    <color name="selectedPieceBackground">#9EFFFE</color>
 </resources>

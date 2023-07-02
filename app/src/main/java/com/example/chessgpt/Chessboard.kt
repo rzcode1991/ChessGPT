@@ -11,7 +11,7 @@ class Chessboard(context: Context) {
 
     private val numRows = 8
     private val numColumns = 8
-    private val board: Array<Array<Piece?>> = Array(numRows) { arrayOfNulls(numColumns) }
+    private val board: Array<Array<Piece?>> = Array(8) { Array<Piece?>(8) { null } }
 
 
 
@@ -73,14 +73,36 @@ class Chessboard(context: Context) {
 
 
 
-    private fun setPiece(coordinate: Coordinate, piece: Piece?) {
-        val (row, col) = coordinate
-        board[row][col] = piece
+    fun movePiece(source: Coordinate, destination: Coordinate) {
+        val piece = getPiece(source) ?: return  // Return if there's no piece at the source coordinate
+
+        // Remove the piece from the source coordinate
+        setPiece(source, null)
+
+        // Move the piece to the destination coordinate
+        setPiece(destination, piece)
     }
 
     fun getPiece(coordinate: Coordinate): Piece? {
-        val (row, col) = coordinate
-        return board[row][col]
+        val row = coordinate.row
+        val col = coordinate.col
+        return if (isValidCoordinate(row, col)) {
+            board[row][col]
+        } else {
+            null
+        }
+    }
+
+    private fun setPiece(coordinate: Coordinate, piece: Piece?) {
+        val row = coordinate.row
+        val col = coordinate.col
+        if (isValidCoordinate(row, col)) {
+            board[row][col] = piece
+        }
+    }
+
+    private fun isValidCoordinate(row: Int, col: Int): Boolean {
+        return row in 0..7 && col in 0..7
     }
 
     fun getEmptySquares(): List<Coordinate> {
@@ -148,7 +170,6 @@ class Chessboard(context: Context) {
             is Knight -> getValidMovesForKnight(piece, source)
             is Bishop -> getValidMovesForBishop(piece, source)
             is Queen -> getValidMovesForQueen(piece, source)
-            // Add more cases for other pieces
             else -> emptyList()
         }
     }
