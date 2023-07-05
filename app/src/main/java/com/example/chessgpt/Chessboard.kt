@@ -1,12 +1,13 @@
 package com.example.chessgpt
 
 import android.content.Context
+import android.view.View
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
 
-class Chessboard(context: Context) {
+class Chessboard(context: Context) : View(context) {
 
 
     private val numRows = 8
@@ -83,6 +84,13 @@ class Chessboard(context: Context) {
         setPiece(destination, piece)
     }
 
+
+    fun removePiece(coordinate: Coordinate) {
+        setPiece(coordinate, null)
+    }
+
+
+
     fun getPiece(coordinate: Coordinate): Piece? {
         val row = coordinate.row
         val col = coordinate.col
@@ -100,6 +108,13 @@ class Chessboard(context: Context) {
             board[row][col] = piece
         }
     }
+
+    fun isOpponentPiece(selectedPiece: Piece, opponentPiece: Piece): Boolean {
+        // Check if the types of the two pieces are different
+        return selectedPiece.type != opponentPiece.type
+    }
+
+
 
     private fun isValidCoordinate(row: Int, col: Int): Boolean {
         return row in 0..7 && col in 0..7
@@ -197,17 +212,18 @@ class Chessboard(context: Context) {
 
         // Check the diagonal captures
         val leftCapture = Coordinate(row + direction, col - 1)
-        if (isValidPosition(leftCapture) && getPiece(leftCapture)?.type != pawn.type) {
+        if (isValidPosition(leftCapture) && getPiece(leftCapture)?.type != pawn.type && getPiece(leftCapture) != null) {
             validMoves.add(leftCapture)
         }
 
         val rightCapture = Coordinate(row + direction, col + 1)
-        if (isValidPosition(rightCapture) && getPiece(rightCapture)?.type != pawn.type) {
+        if (isValidPosition(rightCapture) && getPiece(rightCapture)?.type != pawn.type && getPiece(rightCapture) != null) {
             validMoves.add(rightCapture)
         }
 
         return validMoves
     }
+
 
 
 
