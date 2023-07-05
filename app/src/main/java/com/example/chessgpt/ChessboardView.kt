@@ -6,6 +6,7 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
 import android.util.AttributeSet
+import android.view.MotionEvent
 import android.view.View
 import androidx.core.content.ContextCompat
 
@@ -17,6 +18,11 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
     private var cellSize = 0f
     private val chessPiecePositions: MutableMap<Coordinate, Int?> = mutableMapOf()
     private var pieceSize = 0f
+    private var selectedPiece: Piece? = null
+    private var selectedPieceCoordinate: Coordinate? = null
+    private var highlightedCoordinate: Coordinate? = null
+
+
 
     private val pieceDrawables: Map<PieceType, Int> = mapOf(
         PieceType.WHITE_PAWN to R.drawable.white_pawn,
@@ -35,6 +41,83 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
 
 
 
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        val action = event.action
+        val x = event.x
+        val y = event.y
+
+        when (action) {
+            MotionEvent.ACTION_DOWN -> {
+                // User touched down on the chessboard
+                handleTouchDown(x, y)
+            }
+            MotionEvent.ACTION_UP -> {
+                // User released touch on the chessboard
+                handleTouchUp(x, y)
+            }
+        }
+
+        // Return true to indicate that the event has been handled
+        return true
+    }
+
+
+    private fun handleTouchDown(x: Float, y: Float) {
+        val coordinate = getCoordinateFromPosition(x, y)
+        val piece = chessboard?.getPiece(coordinate)
+
+        if (piece != null && selectedPiece == null) {
+            // Select the piece and highlight the square
+            selectedPiece = piece
+            selectedPieceCoordinate = coordinate
+            invalidate() // Redraw the chessboard to highlight the selected square
+        }
+    }
+
+
+
+    private fun handleTouchUp(x: Float, y: Float) {
+        if (selectedPiece != null && selectedPieceCoordinate != null) {
+            val sourceCoordinate = selectedPieceCoordinate
+            val destinationCoordinate = getCoordinateFromPosition(x, y)
+
+            if (sourceCoordinate != null && destinationCoordinate != null) {
+                val isMoveValid = chessboard?.isMoveValid(selectedPiece!!, sourceCoordinate, destinationCoordinate)
+
+                if (isMoveValid == true) {
+                    val targetPiece = chessboard?.getPiece(destinationCoordinate)
+
+                    if (targetPiece == null || targetPiece.pieceColor() != selectedPiece!!.pieceColor()) {
+                        // Move the piece to the valid destination
+                        chessboard?.movePiece(sourceCoordinate, destinationCoordinate)
+                        invalidate() // Redraw the chessboard to reflect the updated position
+                    }
+                }
+            }
+
+            // Reset the selected piece and coordinate
+            selectedPiece = null
+            selectedPieceCoordinate = null
+
+            // Highlight the selected piece's coordinate
+            highlightedCoordinate = sourceCoordinate
+
+            invalidate() // Redraw the chessboard to highlight the selected piece
+        }
+    }
+
+
+
+
+
+
+    private fun getCoordinateFromPosition(x: Float, y: Float): Coordinate {
+        val col = (x / cellSize).toInt()
+        val row = (y / cellSize).toInt()
+        return Coordinate(row, col)
+    }
+
+
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
@@ -47,16 +130,37 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        // Custom drawing code for the chessboard and pieces
         drawChessboard(canvas)
         drawChessPieces(canvas)
+
+        // Highlight the selected square if a piece is selected
+        if (selectedPieceCoordinate != null) {
+            val selectedCellLeft = selectedPieceCoordinate!!.col * cellSize
+            val selectedCellTop = selectedPieceCoordinate!!.row * cellSize
+            val selectedCellRight = selectedCellLeft + cellSize
+            val selectedCellBottom = selectedCellTop + cellSize
+
+            val highlightColor = ContextCompat.getColor(context, R.color.highlightColor)
+            val paint = Paint()
+            paint.style = Paint.Style.FILL
+            paint.color = highlightColor
+            canvas.drawRect(
+                selectedCellLeft,
+                selectedCellTop,
+                selectedCellRight,
+                selectedCellBottom,
+                paint
+            )
+        }
     }
+
 
 
 
     private fun drawChessboard(canvas: Canvas) {
         val darkCellColor = ContextCompat.getColor(context, R.color.darkCellColor)
         val lightCellColor = ContextCompat.getColor(context, R.color.lightCellColor)
+        val highlightColor = ContextCompat.getColor(context, R.color.highlightColor)
 
         val paint = Paint()
         paint.style = Paint.Style.FILL
@@ -77,9 +181,23 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
 
                 // Draw the cell rectangle using canvas.drawRect()
                 canvas.drawRect(cellLeft, cellTop, cellRight, cellBottom, paint)
+
+                if (highlightedCoordinate != null && highlightedCoordinate == Coordinate(row, column)) {
+                    // Draw the highlight color around the selected square
+                    paint.color = highlightColor
+                    val highlightPadding = cellSize * 0.005f
+                    canvas.drawRect(
+                        cellLeft - highlightPadding,
+                        cellTop - highlightPadding,
+                        cellRight + highlightPadding,
+                        cellBottom + highlightPadding,
+                        paint
+                    )
+                }
             }
         }
     }
+
 
     private fun drawChessPieces(canvas: Canvas) {
         chessboard?.let {
@@ -137,16 +255,17 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
         }
     }
 
-    private fun createPiece(pieceType: PieceType): Piece {
+    private fun createPiece(pieceType: PieceType, pieceColor: PieceColor): Piece {
         return when (pieceType) {
-            PieceType.WHITE_PAWN, PieceType.BLACK_PAWN -> Pawn(pieceType)
-            PieceType.WHITE_ROOK, PieceType.BLACK_ROOK -> Rook(pieceType)
-            PieceType.WHITE_KNIGHT, PieceType.BLACK_KNIGHT -> Knight(pieceType)
-            PieceType.WHITE_BISHOP, PieceType.BLACK_BISHOP -> Bishop(pieceType)
-            PieceType.WHITE_QUEEN, PieceType.BLACK_QUEEN -> Queen(pieceType)
-            PieceType.WHITE_KING, PieceType.BLACK_KING -> King(pieceType)
+            PieceType.WHITE_PAWN, PieceType.BLACK_PAWN -> Pawn(pieceType, pieceColor)
+            PieceType.WHITE_ROOK, PieceType.BLACK_ROOK -> Rook(pieceType, pieceColor)
+            PieceType.WHITE_KNIGHT, PieceType.BLACK_KNIGHT -> Knight(pieceType, pieceColor)
+            PieceType.WHITE_BISHOP, PieceType.BLACK_BISHOP -> Bishop(pieceType, pieceColor)
+            PieceType.WHITE_QUEEN, PieceType.BLACK_QUEEN -> Queen(pieceType, pieceColor)
+            PieceType.WHITE_KING, PieceType.BLACK_KING -> King(pieceType, pieceColor)
         }
     }
+
 
     fun loadDrawables(context: Context) {
         for (pieceType in PieceType.values()) {
@@ -154,12 +273,24 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
             val drawable = drawableResId?.let {
                 ContextCompat.getDrawable(context, it)
             }
-            val piece = createPiece(pieceType)
+            val pieceColor = getPieceColorForPieceType(pieceType) // Assuming you have a way to determine the color based on piece type
+            val piece = createPiece(pieceType, pieceColor)
             drawable?.let {
                 piece.loadDrawable(it)
             }
         }
     }
+
+    private fun getPieceColorForPieceType(pieceType: PieceType): PieceColor {
+        return when (pieceType) {
+            PieceType.WHITE_PAWN, PieceType.WHITE_ROOK, PieceType.WHITE_KNIGHT,
+            PieceType.WHITE_BISHOP, PieceType.WHITE_QUEEN, PieceType.WHITE_KING -> PieceColor.White
+            PieceType.BLACK_PAWN, PieceType.BLACK_ROOK, PieceType.BLACK_KNIGHT,
+            PieceType.BLACK_BISHOP, PieceType.BLACK_QUEEN, PieceType.BLACK_KING -> PieceColor.Black
+        }
+    }
+
+
 
     fun updateChessboard(chessboard: Chessboard) {
         loadDrawables(context) // Load the drawable resources for the chess pieces

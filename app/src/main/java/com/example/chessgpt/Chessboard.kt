@@ -16,18 +16,19 @@ class Chessboard(context: Context) : View(context) {
 
 
 
-    private val whitePawn = Pawn(PieceType.WHITE_PAWN)
-    private val blackPawn = Pawn(PieceType.BLACK_PAWN)
-    private val whiteRook = Rook(PieceType.WHITE_ROOK)
-    private val blackRook = Rook(PieceType.BLACK_ROOK)
-    private val whiteKnight = Knight(PieceType.WHITE_KNIGHT)
-    private val blackKnight = Knight(PieceType.BLACK_KNIGHT)
-    private val whiteBishop = Bishop(PieceType.WHITE_BISHOP)
-    private val blackBishop = Bishop(PieceType.BLACK_BISHOP)
-    private val whiteQueen = Queen(PieceType.WHITE_QUEEN)
-    private val blackQueen = Queen(PieceType.BLACK_QUEEN)
-    private val whiteKing = King(PieceType.WHITE_KING)
-    private val blackKing = King(PieceType.BLACK_KING)
+    private val whitePawn = Pawn(PieceType.WHITE_PAWN, PieceColor.White)
+    private val blackPawn = Pawn(PieceType.BLACK_PAWN, PieceColor.Black)
+    private val whiteRook = Rook(PieceType.WHITE_ROOK, PieceColor.White)
+    private val blackRook = Rook(PieceType.BLACK_ROOK, PieceColor.Black)
+    private val whiteKnight = Knight(PieceType.WHITE_KNIGHT, PieceColor.White)
+    private val blackKnight = Knight(PieceType.BLACK_KNIGHT, PieceColor.Black)
+    private val whiteBishop = Bishop(PieceType.WHITE_BISHOP, PieceColor.White)
+    private val blackBishop = Bishop(PieceType.BLACK_BISHOP, PieceColor.Black)
+    private val whiteQueen = Queen(PieceType.WHITE_QUEEN, PieceColor.White)
+    private val blackQueen = Queen(PieceType.BLACK_QUEEN, PieceColor.Black)
+    private val whiteKing = King(PieceType.WHITE_KING, PieceColor.White)
+    private val blackKing = King(PieceType.BLACK_KING, PieceColor.Black)
+
 
     init {
         initializePieces()
@@ -382,6 +383,9 @@ class Chessboard(context: Context) : View(context) {
             if (piece == null) {
                 validMoves.add(coordinate)
             } else {
+                if (piece.color != queen.color) {
+                    validMoves.add(coordinate)
+                }
                 break
             }
         }
@@ -392,6 +396,9 @@ class Chessboard(context: Context) : View(context) {
             if (piece == null) {
                 validMoves.add(coordinate)
             } else {
+                if (piece.color != queen.color) {
+                    validMoves.add(coordinate)
+                }
                 break
             }
         }
@@ -402,6 +409,9 @@ class Chessboard(context: Context) : View(context) {
             if (piece == null) {
                 validMoves.add(coordinate)
             } else {
+                if (piece.color != queen.color) {
+                    validMoves.add(coordinate)
+                }
                 break
             }
         }
@@ -412,6 +422,9 @@ class Chessboard(context: Context) : View(context) {
             if (piece == null) {
                 validMoves.add(coordinate)
             } else {
+                if (piece.color != queen.color) {
+                    validMoves.add(coordinate)
+                }
                 break
             }
         }
@@ -425,6 +438,9 @@ class Chessboard(context: Context) : View(context) {
             if (piece == null) {
                 validMoves.add(coordinate)
             } else {
+                if (piece.color != queen.color) {
+                    validMoves.add(coordinate)
+                }
                 break
             }
             r--
@@ -439,6 +455,9 @@ class Chessboard(context: Context) : View(context) {
             if (piece == null) {
                 validMoves.add(coordinate)
             } else {
+                if (piece.color != queen.color) {
+                    validMoves.add(coordinate)
+                }
                 break
             }
             r--
@@ -453,6 +472,9 @@ class Chessboard(context: Context) : View(context) {
             if (piece == null) {
                 validMoves.add(coordinate)
             } else {
+                if (piece.color != queen.color) {
+                    validMoves.add(coordinate)
+                }
                 break
             }
             r++
@@ -467,6 +489,9 @@ class Chessboard(context: Context) : View(context) {
             if (piece == null) {
                 validMoves.add(coordinate)
             } else {
+                if (piece.color != queen.color) {
+                    validMoves.add(coordinate)
+                }
                 break
             }
             r++
@@ -475,6 +500,7 @@ class Chessboard(context: Context) : View(context) {
 
         return validMoves
     }
+
 
 
 

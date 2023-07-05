@@ -17,18 +17,28 @@ enum class PieceType {
     BLACK_KING
 }
 
-open class Piece(val type: PieceType) {
+enum class PieceColor {
+    White,
+    Black
+}
+
+open class Piece(val type: PieceType, val color: PieceColor) {
     var drawable: Drawable? = null
 
     fun loadDrawable(drawable: Drawable) {
         this.drawable = drawable
     }
 
+    fun pieceColor(): PieceColor {
+        return color
+    }
+
 }
 
-class Pawn(type: PieceType) : Piece(type)
-class Rook(type: PieceType) : Piece(type)
-class Knight(type: PieceType) : Piece(type)
-class Bishop(type: PieceType) : Piece(type)
-class Queen(type: PieceType) : Piece(type)
-class King(type: PieceType) : Piece(type)
+
+class Pawn(type: PieceType, color: PieceColor) : Piece(type, color)
+class Rook(type: PieceType, color: PieceColor) : Piece(type, color)
+class Knight(type: PieceType, color: PieceColor) : Piece(type, color)
+class Bishop(type: PieceType, color: PieceColor) : Piece(type, color)
+class Queen(type: PieceType, color: PieceColor) : Piece(type, color)
+class King(type: PieceType, color: PieceColor) : Piece(type, color)
