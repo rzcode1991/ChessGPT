@@ -110,11 +110,6 @@ class Chessboard(context: Context) : View(context) {
         }
     }
 
-    fun isOpponentPiece(selectedPiece: Piece, opponentPiece: Piece): Boolean {
-        // Check if the types of the two pieces are different
-        return selectedPiece.type != opponentPiece.type
-    }
-
 
 
     private fun isValidCoordinate(row: Int, col: Int): Boolean {
@@ -213,12 +208,12 @@ class Chessboard(context: Context) : View(context) {
 
         // Check the diagonal captures
         val leftCapture = Coordinate(row + direction, col - 1)
-        if (isValidPosition(leftCapture) && getPiece(leftCapture)?.type != pawn.type && getPiece(leftCapture) != null) {
+        if (isValidPosition(leftCapture) && getPiece(leftCapture)?.color != pawn.color && getPiece(leftCapture) != null) {
             validMoves.add(leftCapture)
         }
 
         val rightCapture = Coordinate(row + direction, col + 1)
-        if (isValidPosition(rightCapture) && getPiece(rightCapture)?.type != pawn.type && getPiece(rightCapture) != null) {
+        if (isValidPosition(rightCapture) && getPiece(rightCapture)?.color != pawn.color && getPiece(rightCapture) != null) {
             validMoves.add(rightCapture)
         }
 
@@ -249,7 +244,7 @@ class Chessboard(context: Context) : View(context) {
                 val piece = getPiece(destination)
 
                 // If the destination is empty or contains an opponent's piece, it is a valid move
-                if (piece == null || piece.type != king.type) {
+                if (piece == null || piece.color != king.color) {
                     validMoves.add(destination)
                 }
             }
@@ -281,7 +276,7 @@ class Chessboard(context: Context) : View(context) {
                 val piece = getPiece(destination)
 
                 // If the destination is empty or contains an opponent's piece, it is a valid move
-                if (piece == null || piece.type != rook.type) {
+                if (piece == null || piece.color != rook.color) {
                     validMoves.add(destination)
                 }
 
@@ -320,7 +315,7 @@ class Chessboard(context: Context) : View(context) {
             // Check if the destination is a valid position and if it's either empty or contains an opponent's piece
             if (isValidPosition(destination)) {
                 val piece = getPiece(destination)
-                if (piece == null || piece.type != knight.type) {
+                if (piece == null || piece.color != knight.color) {
                     validMoves.add(destination)
                 }
             }
@@ -355,7 +350,7 @@ class Chessboard(context: Context) : View(context) {
                     validMoves.add(destination)
                 } else {
                     // If the destination contains an opponent's piece, it's a valid move
-                    if (piece.type != bishop.type) {
+                    if (piece.color != bishop.color) {
                         validMoves.add(destination)
                     }
                     break
@@ -523,6 +518,51 @@ class Chessboard(context: Context) : View(context) {
     }
 
 
+    private fun isKingInCheck(playerColor: PieceColor): Boolean {
+        val opponentPieces = getOpponentPieces(playerColor)
+        val kingCoordinate = getOwnKingCoordinate(playerColor)
+
+        for ((opponentPiece, opponentCoordinate) in opponentPieces) {
+            val validMoves = getValidMoves(opponentPiece, opponentCoordinate)
+            if (kingCoordinate in validMoves) {
+                return true  // King is in check
+            }
+        }
+
+        return false  // King is not in check
+    }
+
+    private fun getOwnKingCoordinate(playerColor: PieceColor): Coordinate {
+        // Iterate over the chessboard to find the king of the specified player color
+        for (row in 0 until numRows) {
+            for (col in 0 until numColumns) {
+                val piece = getPiece(Coordinate(row, col))
+                if (piece is King && piece.color == playerColor) {
+                    return Coordinate(row, col)
+                }
+            }
+        }
+        // Return a default coordinate if the king is not found (shouldn't happen in a valid chess game)
+        return Coordinate(-1, -1)
+    }
+
+    private fun getOpponentPieces(playerColor: PieceColor): List<Pair<Piece, Coordinate>> {
+        val opponentColor = if (playerColor == PieceColor.White) PieceColor.Black else PieceColor.White
+        val opponentPieces = mutableListOf<Pair<Piece, Coordinate>>()
+
+        for (row in 0 until numRows) {
+            for (col in 0 until numColumns) {
+                val piece = getPiece(Coordinate(row, col))
+                if (piece != null && piece.color == opponentColor) {
+                    opponentPieces.add(Pair(piece, Coordinate(row, col)))
+                }
+            }
+        }
+
+        return opponentPieces
+    }
+
+
     private fun isMoveBlocked(piece: Piece, source: Coordinate, destination: Coordinate): Boolean {
         val rowChange = destination.row - source.row
         val colChange = destination.col - source.col
@@ -541,7 +581,7 @@ class Chessboard(context: Context) : View(context) {
                 } else if (abs(colChange) == 1 && rowChange == 1) {
                     // Capturing diagonally
                     val capturedPiece = getPiece(destination)
-                    if (capturedPiece == null || capturedPiece.type == piece.type) {
+                    if (capturedPiece == null || capturedPiece.color == piece.color) {
                         // No piece to capture or capturing own drawable
                         return true
                     }
@@ -576,7 +616,7 @@ class Chessboard(context: Context) : View(context) {
 
                 // Check if the destination is occupied by the player's own piece
                 val destinationPiece = getPiece(destination)
-                if (destinationPiece != null && destinationPiece.type == piece.type) {
+                if (destinationPiece != null && destinationPiece.color == piece.color) {
                     // Destination is occupied by own piece
                     return true
                 }
@@ -586,7 +626,7 @@ class Chessboard(context: Context) : View(context) {
 
                 // Check if the destination is occupied by the player's own piece
                 val destinationPiece = getPiece(destination)
-                if (destinationPiece != null && destinationPiece.type == piece.type) {
+                if (destinationPiece != null && destinationPiece.color == piece.color) {
                     return true  // Move is blocked
                 }
 
@@ -605,7 +645,7 @@ class Chessboard(context: Context) : View(context) {
 
                 // Check if the destination is occupied by the player's own piece
                 val destinationPiece = getPiece(destination)
-                if (destinationPiece != null && destinationPiece.type == piece.type) {
+                if (destinationPiece != null && destinationPiece.color == piece.color) {
                     return true  // Move is blocked
                 }
 
@@ -642,7 +682,7 @@ class Chessboard(context: Context) : View(context) {
 
                 // Check if the destination is occupied by the player's own piece
                 val destinationPiece = getPiece(destination)
-                if (destinationPiece != null && destinationPiece.type == piece.type) {
+                if (destinationPiece != null && destinationPiece.color == piece.color) {
                     return true  // Move is blocked
                 }
 
@@ -703,18 +743,31 @@ class Chessboard(context: Context) : View(context) {
             }
 
             is King -> {
-                // Logic specific to the King piece
-
                 // Check if the destination is occupied by the player's own piece
                 val destinationPiece = getPiece(destination)
-                if (destinationPiece != null && destinationPiece.type == piece.type) {
+                if (destinationPiece != null && destinationPiece.color == piece.color) {
                     return true  // Move is blocked
                 }
 
                 // Check if the move is within the King's allowed range (1 square in any direction)
-                val rowOffset = abs(source.row - destination.row)
-                val colOffset = abs(source.col - destination.col)
+                val rowOffset = abs(rowChange)
+                val colOffset = abs(colChange)
                 if (rowOffset <= 1 && colOffset <= 1) {
+                    // Check if the destination square is adjacent to an opponent's king
+                    val opponentKingCoordinate = getOpponentKingCoordinate(piece.color)
+                    val isAdjacentToOpponentKing = abs(destination.row - opponentKingCoordinate.row) <= 1 &&
+                            abs(destination.col - opponentKingCoordinate.col) <= 1
+                    if (isAdjacentToOpponentKing) {
+                        return true  // Move is blocked
+                    }
+
+                    // Check if the move puts the King in check
+                    val playerColor = piece.color
+                    val simulatedBoard = simulateMove(piece, source, destination)
+                    if (simulatedBoard.isKingInCheck(playerColor)) {
+                        return true  // Move is blocked
+                    }
+
                     // If all checks pass, the move is not blocked
                     return false
                 }
@@ -723,10 +776,45 @@ class Chessboard(context: Context) : View(context) {
                 return true
             }
 
+
         }
 
         return false // Replace with the appropriate return statement
     }
+
+
+    private fun simulateMove(piece: Piece, source: Coordinate, destination: Coordinate): Chessboard {
+        val simulatedBoard = Chessboard(context)
+        // Copy the current board state to the simulated board
+        for (row in 0 until numRows) {
+            for (col in 0 until numColumns) {
+                val coordinate = Coordinate(row, col)
+                val pieceAtCoordinate = getPiece(coordinate)
+                simulatedBoard.setPiece(coordinate, pieceAtCoordinate)
+            }
+        }
+        // Move the piece on the simulated board
+        simulatedBoard.movePiece(source, destination)
+        return simulatedBoard
+    }
+
+
+
+    private fun getOpponentKingCoordinate(playerColor: PieceColor): Coordinate {
+        // Iterate over the chessboard to find the opponent's king
+        for (row in 0 until 8) {
+            for (col in 0 until 8) {
+                val piece = getPiece(Coordinate(row, col))
+                if (piece is King && piece.color != playerColor) {
+                    return Coordinate(row, col)
+                }
+            }
+        }
+        // Return a default coordinate if the opponent's king is not found (shouldn't happen in a valid chess game)
+        return Coordinate(-1, -1)
+    }
+
+
 
 
 
