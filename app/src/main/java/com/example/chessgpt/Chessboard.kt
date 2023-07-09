@@ -13,6 +13,12 @@ class Chessboard(context: Context) : View(context) {
     private val numRows = 8
     private val numColumns = 8
     private val board: Array<Array<Piece?>> = Array(8) { Array<Piece?>(8) { null } }
+    private var whiteKingMoved = false
+    private var blackKingMoved = false
+    private var whiteLeftRookMoved = false
+    private var whiteRightRookMoved = false
+    private var blackLeftRookMoved = false
+    private var blackRightRookMoved = false
 
 
 
@@ -78,11 +84,180 @@ class Chessboard(context: Context) : View(context) {
     fun movePiece(source: Coordinate, destination: Coordinate) {
         val piece = getPiece(source) ?: return  // Return if there's no piece at the source coordinate
 
+        // Special handling for castling
+        if (piece is King && isCastlingMove(source, destination)) {
+            performCastlingMove(source, destination)
+            return
+        }
+
+        // Normal move
         // Remove the piece from the source coordinate
         setPiece(source, null)
 
         // Move the piece to the destination coordinate
         setPiece(destination, piece)
+
+        // Update the king moved flag if the moved piece is a king
+        if (piece is King) {
+            updateKingMovedFlag(piece.color)
+        }
+    }
+
+
+
+    private fun isCastlingMove(source: Coordinate, destination: Coordinate): Boolean {
+        val piece = getPiece(source)
+        if (piece !is King || piece.hasMoved) {
+            return false
+        }
+
+        val row = source.row
+        val col = source.col
+        val kingDestinationCol = destination.col
+
+        // Check if the destination column is valid for castling
+        if (kingDestinationCol != col - 2 && kingDestinationCol != col + 2) {
+            return false
+        }
+
+        // Check if the king is in check
+        if (isKingInCheck(piece.color)) {
+            return false
+        }
+
+        // Check if the king is moving through or into an attacked square
+        val kingPath: List<Coordinate> = if (kingDestinationCol < col) {
+            listOf(Coordinate(row, col - 1), Coordinate(row, col - 2), destination)
+        } else {
+            listOf(Coordinate(row, col + 1), Coordinate(row, col + 2), destination)
+        }
+
+        for (pathCoordinate in kingPath) {
+            val pathPiece = getPiece(pathCoordinate)
+            if (isSquareAttacked(pathCoordinate, piece.color) || pathPiece != null) {
+                return false
+            }
+        }
+
+        // Check if the rook for castling is valid
+        val rookSourceCol: Int
+        val rookDestinationCol: Int
+        if (kingDestinationCol < col) {
+            // Left castling
+            rookSourceCol = 0
+            rookDestinationCol = col - 1
+        } else {
+            // Right castling
+            rookSourceCol = 7
+            rookDestinationCol = col + 1
+        }
+
+        val rookSourceCoordinate = Coordinate(row, rookSourceCol)
+        val rookDestinationCoordinate = Coordinate(row, rookDestinationCol)
+        val rook = getPiece(rookSourceCoordinate)
+
+        return rook is Rook &&
+                !isSquareAttacked(rookSourceCoordinate, piece.color) &&
+                !isSquareAttacked(rookDestinationCoordinate, piece.color) &&
+                isRookMovedFlagValid(rook.color, rookSourceCol, rookDestinationCol)
+    }
+
+
+    private fun isRookMovedFlagValid(color: PieceColor, rookSourceCol: Int, rookDestinationCol: Int): Boolean {
+        when (color) {
+            PieceColor.White -> {
+                if (rookSourceCol == 0 && !whiteLeftRookMoved) {
+                    return true
+                } else if (rookSourceCol == 7 && !whiteRightRookMoved) {
+                    return true
+                }
+            }
+            PieceColor.Black -> {
+                if (rookSourceCol == 0 && !blackLeftRookMoved) {
+                    return true
+                } else if (rookSourceCol == 7 && !blackRightRookMoved) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+
+
+
+    private fun performCastlingMove(source: Coordinate, destination: Coordinate) {
+        val piece = getPiece(source) ?: return
+        val row = source.row
+        val kingDestinationCol = destination.col
+        val rookSourceCol: Int
+        val rookDestinationCol: Int
+
+        if (kingDestinationCol < source.col) {
+            // Left castling
+            rookSourceCol = 0
+            rookDestinationCol = source.col - 1
+        } else {
+            // Right castling
+            rookSourceCol = 7
+            rookDestinationCol = source.col + 1
+        }
+
+        val rookSourceCoordinate = Coordinate(row, rookSourceCol)
+        val rookDestinationCoordinate = Coordinate(row, rookDestinationCol)
+        val rook = getPiece(rookSourceCoordinate)
+
+        // Move the king
+        setPiece(source, null)
+        setPiece(destination, piece)
+
+        // Move the rook
+        setPiece(rookSourceCoordinate, null)
+        setPiece(rookDestinationCoordinate, rook)
+
+        // Update the king and rook moved flags
+        updateKingMovedFlag(piece.color)
+        updateRookMovedFlag(rook!!.color, rookDestinationCol)
+    }
+
+
+    private fun updateKingMovedFlag(color: PieceColor) {
+        when (color) {
+            PieceColor.White -> whiteKing.move()
+            PieceColor.Black -> blackKing.move()
+        }
+    }
+
+
+    private fun updateRookMovedFlag(color: PieceColor, rookDestinationCol: Int) {
+        when (color) {
+            PieceColor.White -> {
+                if (rookDestinationCol == 0) {
+                    whiteLeftRookMoved = true
+                } else if (rookDestinationCol == 7) {
+                    whiteRightRookMoved = true
+                }
+            }
+            PieceColor.Black -> {
+                if (rookDestinationCol == 0) {
+                    blackLeftRookMoved = true
+                } else if (rookDestinationCol == 7) {
+                    blackRightRookMoved = true
+                }
+            }
+        }
+    }
+
+
+    private fun isSquareAttacked(coordinate: Coordinate, attackingColor: PieceColor): Boolean {
+        // Check if any opponent's piece can attack the specified square
+        val opponentPieces = getOpponentPieces(attackingColor)
+        for ((opponentPiece, opponentCoordinate) in opponentPieces) {
+            if (isMoveValid(opponentPiece, opponentCoordinate, coordinate)) {
+                return true
+            }
+        }
+        return false
     }
 
 
@@ -153,6 +328,11 @@ class Chessboard(context: Context) : View(context) {
         // Check if the destination position is within the valid bounds of the chessboard
         if (!isValidPosition(destination)) {
             return false
+        }
+
+        // Check if the move is a valid castling move
+        if (piece is King && isCastlingMove(source, destination)) {
+            return true
         }
 
         // Get the valid moves for the piece and check if the destination is one of them
@@ -532,6 +712,73 @@ class Chessboard(context: Context) : View(context) {
         return false  // King is not in check
     }
 
+
+    fun isCheckmate(playerColor: PieceColor): Boolean {
+        val kingCoordinate = getOwnKingCoordinate(playerColor)
+
+        // Check if the king is in check
+        if (!isKingInCheck(playerColor)) {
+            return false  // King is not in check, so not in checkmate
+        }
+
+        // Check if the king has any valid moves to escape check
+        val king = getPiece(kingCoordinate) as? King ?: return true  // Invalid board state
+        val validKingMoves = getValidMoves(king, kingCoordinate)
+
+        for (move in validKingMoves) {
+            val simulatedBoard = simulateMove(king, kingCoordinate, move)
+            if (!simulatedBoard.isKingInCheck(playerColor)) {
+                return false  // King has at least one valid move to escape check
+            }
+        }
+
+        // Check if any other piece can block the check or capture the attacking piece
+        val opponentPieces = getOpponentPieces(playerColor)
+        for ((opponentPiece, opponentCoordinate) in opponentPieces) {
+            val validMoves = getValidMoves(opponentPiece, opponentCoordinate)
+
+            for (move in validMoves) {
+                val simulatedBoard = simulateMove(opponentPiece, opponentCoordinate, move)
+                if (!simulatedBoard.isKingInCheck(playerColor)) {
+                    return false  // Piece can be blocked or captured to escape check
+                }
+            }
+        }
+
+        // If none of the above conditions are met, it's a checkmate
+        return true
+    }
+
+
+    fun isStalemate(playerColor: PieceColor): Boolean {
+        val ownPieces = getOwnPieces(playerColor)
+        val validMoves = mutableListOf<Coordinate>()
+
+        // Collect all valid moves for the player's pieces
+        for ((piece, coordinate) in ownPieces) {
+            validMoves.addAll(getValidMoves(piece, coordinate))
+        }
+
+        // If the player has no valid moves and is not in check, it's a stalemate
+        return validMoves.isEmpty() && !isKingInCheck(playerColor)
+    }
+
+
+    private fun getOpponentKingCoordinate(playerColor: PieceColor): Coordinate {
+        // Iterate over the chessboard to find the opponent's king
+        for (row in 0 until 8) {
+            for (col in 0 until 8) {
+                val piece = getPiece(Coordinate(row, col))
+                if (piece is King && piece.color != playerColor) {
+                    return Coordinate(row, col)
+                }
+            }
+        }
+        // Return a default coordinate if the opponent's king is not found (shouldn't happen in a valid chess game)
+        return Coordinate(-1, -1)
+    }
+
+
     private fun getOwnKingCoordinate(playerColor: PieceColor): Coordinate {
         // Iterate over the chessboard to find the king of the specified player color
         for (row in 0 until numRows) {
@@ -560,6 +807,22 @@ class Chessboard(context: Context) : View(context) {
         }
 
         return opponentPieces
+    }
+
+
+    private fun getOwnPieces(playerColor: PieceColor): List<Pair<Piece, Coordinate>> {
+        val ownPieces = mutableListOf<Pair<Piece, Coordinate>>()
+
+        for (row in 0 until numRows) {
+            for (col in 0 until numColumns) {
+                val piece = getPiece(Coordinate(row, col))
+                if (piece != null && piece.color == playerColor) {
+                    ownPieces.add(Pair(piece, Coordinate(row, col)))
+                }
+            }
+        }
+
+        return ownPieces
     }
 
 
@@ -796,22 +1059,6 @@ class Chessboard(context: Context) : View(context) {
         // Move the piece on the simulated board
         simulatedBoard.movePiece(source, destination)
         return simulatedBoard
-    }
-
-
-
-    private fun getOpponentKingCoordinate(playerColor: PieceColor): Coordinate {
-        // Iterate over the chessboard to find the opponent's king
-        for (row in 0 until 8) {
-            for (col in 0 until 8) {
-                val piece = getPiece(Coordinate(row, col))
-                if (piece is King && piece.color != playerColor) {
-                    return Coordinate(row, col)
-                }
-            }
-        }
-        // Return a default coordinate if the opponent's king is not found (shouldn't happen in a valid chess game)
-        return Coordinate(-1, -1)
     }
 
 

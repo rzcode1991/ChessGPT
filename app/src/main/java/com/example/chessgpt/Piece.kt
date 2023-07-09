@@ -25,6 +25,13 @@ enum class PieceColor {
 open class Piece(val type: PieceType, val color: PieceColor) {
     var drawable: Drawable? = null
 
+    var hasMoved: Boolean = false
+        private set
+
+    fun move() {
+        hasMoved = true
+    }
+
     fun loadDrawable(drawable: Drawable) {
         this.drawable = drawable
     }
