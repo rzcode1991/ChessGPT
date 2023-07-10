@@ -13,8 +13,6 @@ class Chessboard(context: Context) : View(context) {
     private val numRows = 8
     private val numColumns = 8
     private val board: Array<Array<Piece?>> = Array(8) { Array<Piece?>(8) { null } }
-    private var whiteKingMoved = false
-    private var blackKingMoved = false
     private var whiteLeftRookMoved = false
     private var whiteRightRookMoved = false
     private var blackLeftRookMoved = false
@@ -101,7 +99,25 @@ class Chessboard(context: Context) : View(context) {
         if (piece is King) {
             updateKingMovedFlag(piece.color)
         }
+
+        // Check if the moved piece is a pawn and has reached the last rank
+        if (piece is Pawn && (destination.row == 0 || destination.row == 7)) {
+            // Promote the pawn to a queen of the same color
+            val promotedPiece = Queen(getPromotedPieceType(piece.color), piece.color)
+            setPiece(destination, promotedPiece)
+        }
     }
+
+
+    private fun getPromotedPieceType(color: PieceColor): PieceType {
+        return if (color == PieceColor.White) {
+            PieceType.WHITE_QUEEN
+        } else {
+            PieceType.BLACK_QUEEN
+        }
+    }
+
+
 
 
 
@@ -261,9 +277,7 @@ class Chessboard(context: Context) : View(context) {
     }
 
 
-    fun removePiece(coordinate: Coordinate) {
-        setPiece(coordinate, null)
-    }
+
 
 
 
@@ -305,6 +319,19 @@ class Chessboard(context: Context) : View(context) {
 
         return emptySquares
     }
+
+
+    fun getBoardString(): String {
+        val boardString = StringBuilder()
+        for (row in board) {
+            for (piece in row) {
+                boardString.append("$piece ")
+            }
+            boardString.append("\n")
+        }
+        return boardString.toString()
+    }
+
 
     fun getAlgebraicNotation(coordinate: Coordinate): String {
         val (row, col) = coordinate
@@ -686,18 +713,6 @@ class Chessboard(context: Context) : View(context) {
 
 
 
-    fun getBoardString(): String {
-        val boardString = StringBuilder()
-        for (row in board) {
-            for (piece in row) {
-                boardString.append("$piece ")
-            }
-            boardString.append("\n")
-        }
-        return boardString.toString()
-    }
-
-
     private fun isKingInCheck(playerColor: PieceColor): Boolean {
         val opponentPieces = getOpponentPieces(playerColor)
         val kingCoordinate = getOwnKingCoordinate(playerColor)
@@ -792,6 +807,8 @@ class Chessboard(context: Context) : View(context) {
         // Return a default coordinate if the king is not found (shouldn't happen in a valid chess game)
         return Coordinate(-1, -1)
     }
+
+
 
     private fun getOpponentPieces(playerColor: PieceColor): List<Pair<Piece, Coordinate>> {
         val opponentColor = if (playerColor == PieceColor.White) PieceColor.Black else PieceColor.White
