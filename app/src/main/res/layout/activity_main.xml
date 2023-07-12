@@ -10,54 +10,6 @@
     android:background="@color/grey"
     tools:context=".MainActivity">
 
-    <LinearLayout
-        android:id="@+id/promotion_layout"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginBottom="40dp"
-        android:visibility="gone">
-
-        <ImageView
-            android:id="@+id/iv_queen"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:onClick="onPromotionPieceSelected"
-            android:src="@drawable/queen"
-            android:tag="queen" />
-
-        <ImageView
-            android:id="@+id/iv_rook"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:onClick="onPromotionPieceSelected"
-            android:src="@drawable/rook"
-            android:tag="rook" />
-
-        <ImageView
-            android:id="@+id/iv_bishop"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:onClick="onPromotionPieceSelected"
-            android:src="@drawable/bishop"
-            android:tag="bishop" />
-
-        <ImageView
-            android:id="@+id/iv_knight"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:onClick="onPromotionPieceSelected"
-            android:src="@drawable/knight"
-            android:tag="knight" />
-
-    </LinearLayout>
-
-
     <com.example.chessgpt.ChessboardView
         android:id="@+id/cv_chessboardView"
         android:layout_width="match_parent"

@@ -847,6 +847,15 @@ class Chessboard(context: Context) : View(context) {
         val rowChange = destination.row - source.row
         val colChange = destination.col - source.col
 
+        // Simulate the move on a temporary board
+        val simulatedBoard = simulateMove(piece, source, destination)
+
+        // Check if the move puts the own king in check
+        val playerColor = piece.color
+        if (simulatedBoard.isKingInCheck(playerColor)) {
+            return true  // Move is blocked
+        }
+
         when (piece) {
             is Pawn -> {
                 if (colChange == 0) {
@@ -1041,12 +1050,7 @@ class Chessboard(context: Context) : View(context) {
                         return true  // Move is blocked
                     }
 
-                    // Check if the move puts the King in check
-                    val playerColor = piece.color
-                    val simulatedBoard = simulateMove(piece, source, destination)
-                    if (simulatedBoard.isKingInCheck(playerColor)) {
-                        return true  // Move is blocked
-                    }
+
 
                     // If all checks pass, the move is not blocked
                     return false
