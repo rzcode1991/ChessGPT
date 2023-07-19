@@ -11,4 +11,5 @@
     <color name="darkCellColor">#bc6c25</color>
     <color name="lightCellColor">#FFFFFFFF</color>
     <color name="highlightColor">#9EFFFE</color>
+    <color name="green">#4CAF50</color>
 </resources>

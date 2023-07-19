@@ -321,25 +321,6 @@ class Chessboard(context: Context) : View(context) {
     }
 
 
-    fun getBoardString(): String {
-        val boardString = StringBuilder()
-        for (row in board) {
-            for (piece in row) {
-                boardString.append("$piece ")
-            }
-            boardString.append("\n")
-        }
-        return boardString.toString()
-    }
-
-
-    fun getAlgebraicNotation(coordinate: Coordinate): String {
-        val (row, col) = coordinate
-        val file = ('a' + col).toString()  // Map column index to file letter (a-h)
-        val rank = (row + 1).toString()  // Map row index to rank number (1-8)
-        return "$file$rank"
-    }
-
 
     fun isMoveValid(piece: Piece, source: Coordinate, destination: Coordinate): Boolean {
         // Check if the source position contains the specified piece

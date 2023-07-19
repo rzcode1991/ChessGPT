@@ -1,5 +1,6 @@
 package com.example.chessgpt
 
+import android.util.Log
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -9,6 +10,9 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 
 class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
@@ -21,6 +25,10 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
     private var selectedPiece: Piece? = null
     private var selectedPieceCoordinate: Coordinate? = null
     private var highlightedCoordinate: Coordinate? = null
+    private var aiPlayer: ChatGPTAIPlayer? = null
+    private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Main)
+    private var moveNumber = 1
+    private val moveHistory: MutableList<String> = mutableListOf()
 
 
 
@@ -76,6 +84,12 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
 
 
 
+    fun initAIPlayer(apiKey: String) {
+        aiPlayer = ChatGPTAIPlayer(apiKey)
+    }
+
+
+
     private fun handleTouchUp(x: Float, y: Float) {
         if (selectedPiece != null && selectedPieceCoordinate != null) {
             val sourceCoordinate = selectedPieceCoordinate
@@ -91,6 +105,16 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
                         // Move the piece to the valid destination
                         chessboard?.movePiece(sourceCoordinate, destinationCoordinate)
                         invalidate() // Redraw the chessboard to reflect the updated position
+
+                        // Add algebraic notation of the move to the moveHistory list
+                        val attackingPiece = selectedPiece?.getPieceNotation() ?: "" // Get the notation of the attacking piece
+                        moveNumber++
+                        val moveNotation = if (moveNumber % 2 == 0) {
+                            "${moveNumber / 2}. $attackingPiece${if(targetPiece != null) "x" else ""}${destinationCoordinate.getAlgebraicNotation()}"
+                        } else {
+                            "$attackingPiece${if(targetPiece != null) "x" else ""}${destinationCoordinate.getAlgebraicNotation()}"
+                        }
+                        moveHistory.add(moveNotation)
                     }
                 }
             }
@@ -103,6 +127,27 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
             highlightedCoordinate = sourceCoordinate
 
             invalidate() // Redraw the chessboard to highlight the selected piece
+
+            // Trigger the AI player to suggest its move
+            coroutineScope.launch {
+
+                val boardState = moveHistory.joinToString(" ")
+
+                Log.d("Board State", "Previous Moves: $boardState")
+
+                // Call suggestMove with boardState
+                val aiMove = aiPlayer?.suggestMove(boardState)
+
+                if (aiMove != null) {
+                    Log.d("AI Move", "Suggested Move: $aiMove")
+                    // Process the AI move and update the chessboard state
+                    // ...
+
+                    // Redraw the chessboard
+                    invalidate()
+                }
+            }
+
         }
     }
 

@@ -5,9 +5,12 @@ import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var aiPlayer: ChatGPTAIPlayer
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
 
 
         // Find the ChessboardView in your layout
@@ -15,6 +18,13 @@ class MainActivity : AppCompatActivity() {
 
         // Create an instance of Chessboard or obtain an existing one
         val chessboard = Chessboard(this)
+
+        // Initialize the AI player
+        chessboardView.initAIPlayer(Constants.API)
+
+
+        // Create an instance of ChatGPTAIPlayer with your API key
+        aiPlayer = ChatGPTAIPlayer(Constants.API)
 
         // Load the drawables
         chessboardView.loadDrawables(this)
@@ -26,6 +36,10 @@ class MainActivity : AppCompatActivity() {
 
 
     }
+
+
+
+
 
 
 }

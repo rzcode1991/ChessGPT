@@ -22,7 +22,11 @@ enum class PieceColor {
     Black
 }
 
-open class Piece(val type: PieceType, val color: PieceColor) {
+abstract class Piece(val type: PieceType, val color: PieceColor) {
+
+    abstract fun getPieceNotation(): String
+
+
     var drawable: Drawable? = null
 
     var hasMoved: Boolean = false
@@ -43,9 +47,39 @@ open class Piece(val type: PieceType, val color: PieceColor) {
 }
 
 
-class Pawn(type: PieceType, color: PieceColor) : Piece(type, color)
-class Rook(type: PieceType, color: PieceColor) : Piece(type, color)
-class Knight(type: PieceType, color: PieceColor) : Piece(type, color)
-class Bishop(type: PieceType, color: PieceColor) : Piece(type, color)
-class Queen(type: PieceType, color: PieceColor) : Piece(type, color)
-class King(type: PieceType, color: PieceColor) : Piece(type, color)
+class Pawn(type: PieceType, color: PieceColor) : Piece(type, color) {
+    override fun getPieceNotation(): String {
+        return "" // Pawns do not have a specific notation
+    }
+}
+
+class Rook(type: PieceType, color: PieceColor) : Piece(type, color) {
+    override fun getPieceNotation(): String {
+        return "R"
+    }
+}
+
+class Knight(type: PieceType, color: PieceColor) : Piece(type, color) {
+    override fun getPieceNotation(): String {
+        return "N"
+    }
+}
+
+class Bishop(type: PieceType, color: PieceColor) : Piece(type, color) {
+    override fun getPieceNotation(): String {
+        return "B"
+    }
+}
+
+class Queen(type: PieceType, color: PieceColor) : Piece(type, color) {
+    override fun getPieceNotation(): String {
+        return "Q"
+    }
+}
+
+class King(type: PieceType, color: PieceColor) : Piece(type, color) {
+    override fun getPieceNotation(): String {
+        return "K"
+    }
+}
+
