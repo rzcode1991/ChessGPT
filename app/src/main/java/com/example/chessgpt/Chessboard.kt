@@ -83,7 +83,7 @@ class Chessboard(context: Context) : View(context) {
         val piece = getPiece(source) ?: return  // Return if there's no piece at the source coordinate
 
         // Special handling for castling
-        if (piece is King && isCastlingMove(source, destination)) {
+        if (piece is King && isCastlingMove(piece, source, destination)) {
             performCastlingMove(source, destination)
             return
         }
@@ -121,62 +121,43 @@ class Chessboard(context: Context) : View(context) {
 
 
 
-    private fun isCastlingMove(source: Coordinate, destination: Coordinate): Boolean {
-        val piece = getPiece(source)
-        if (piece !is King || piece.hasMoved) {
+    private fun isCastlingMove(selectedPiece: Piece, sourceCoordinate: Coordinate, destinationCoordinate: Coordinate): Boolean {
+        // Check if the selected piece is the king and it hasn't moved
+        if (selectedPiece !is King || selectedPiece.hasMoved) {
             return false
         }
 
-        val row = source.row
-        val col = source.col
-        val kingDestinationCol = destination.col
+        // Get the row and column differences between source and destination coordinates
+        val rowDiff = destinationCoordinate.row - sourceCoordinate.row
+        val colDiff = destinationCoordinate.col - sourceCoordinate.col
 
-        // Check if the destination column is valid for castling
-        if (kingDestinationCol != col - 2 && kingDestinationCol != col + 2) {
-            return false
-        }
+        // Check if the king is moving two squares horizontally (castling)
+        if (rowDiff == 0 && abs(colDiff) == 2) {
+            val row = sourceCoordinate.row
+            val colStart = min(sourceCoordinate.col, destinationCoordinate.col)
+            val colEnd = max(sourceCoordinate.col, destinationCoordinate.col)
 
-        // Check if the king is in check
-        if (isKingInCheck(piece.color)) {
-            return false
-        }
+            // Check if there are no pieces between the king and the rook
+            for (col in colStart + 1 until colEnd) {
+                if (getPiece(Coordinate(row, col)) != null) {
+                    return false
+                }
+            }
 
-        // Check if the king is moving through or into an attacked square
-        val kingPath: List<Coordinate> = if (kingDestinationCol < col) {
-            listOf(Coordinate(row, col - 1), Coordinate(row, col - 2), destination)
-        } else {
-            listOf(Coordinate(row, col + 1), Coordinate(row, col + 2), destination)
-        }
-
-        for (pathCoordinate in kingPath) {
-            val pathPiece = getPiece(pathCoordinate)
-            if (isSquareAttacked(pathCoordinate, piece.color) || pathPiece != null) {
+            // Check if the rook is at the correct position
+            val rookCol = if (colDiff > 0) 7 else 0
+            val rookCoordinate = Coordinate(row, rookCol)
+            val rook = getPiece(rookCoordinate)
+            if (rook !is Rook || rook.hasMoved) {
                 return false
             }
+
+            return true
         }
 
-        // Check if the rook for castling is valid
-        val rookSourceCol: Int
-        val rookDestinationCol: Int
-        if (kingDestinationCol < col) {
-            // Left castling
-            rookSourceCol = 0
-            rookDestinationCol = col - 1
-        } else {
-            // Right castling
-            rookSourceCol = 7
-            rookDestinationCol = col + 1
-        }
-
-        val rookSourceCoordinate = Coordinate(row, rookSourceCol)
-        val rookDestinationCoordinate = Coordinate(row, rookDestinationCol)
-        val rook = getPiece(rookSourceCoordinate)
-
-        return rook is Rook &&
-                !isSquareAttacked(rookSourceCoordinate, piece.color) &&
-                !isSquareAttacked(rookDestinationCoordinate, piece.color) &&
-                isRookMovedFlagValid(rook.color, rookSourceCol, rookDestinationCol)
+        return false
     }
+
 
 
     private fun isRookMovedFlagValid(color: PieceColor, rookSourceCol: Int, rookDestinationCol: Int): Boolean {
@@ -339,7 +320,7 @@ class Chessboard(context: Context) : View(context) {
         }
 
         // Check if the move is a valid castling move
-        if (piece is King && isCastlingMove(source, destination)) {
+        if (piece is King && isCastlingMove(piece, source, destination)) {
             return true
         }
 
@@ -694,7 +675,7 @@ class Chessboard(context: Context) : View(context) {
 
 
 
-    private fun isKingInCheck(playerColor: PieceColor): Boolean {
+    fun isKingInCheck(playerColor: PieceColor): Boolean {
         val opponentPieces = getOpponentPieces(playerColor)
         val kingCoordinate = getOwnKingCoordinate(playerColor)
 
@@ -821,6 +802,44 @@ class Chessboard(context: Context) : View(context) {
         }
 
         return ownPieces
+    }
+
+
+    private fun getPiecesOfType(piece: Piece): List<Pair<Piece, Coordinate>> {
+        val piecesOfType = mutableListOf<Pair<Piece, Coordinate>>()
+
+        for (row in 0 until numRows) {
+            for (col in 0 until numColumns) {
+                val coordinate = Coordinate(row, col)
+                val boardPiece = getPiece(coordinate)
+
+                if (boardPiece != null && boardPiece::class == piece::class) {
+                    piecesOfType.add(Pair(boardPiece, coordinate))
+                }
+            }
+        }
+
+        return piecesOfType
+    }
+
+    fun findSourceOfValidMove(pieceInfo: Pair<Piece?, Coordinate>?, board: Chessboard): Coordinate? {
+        val (piece, destination) = pieceInfo ?: return null
+
+        // Get list of all pieces of same type as the input piece
+        val piecesOfSameType = piece?.let { board.getPiecesOfType(it) }
+
+        // Search for a piece that has the destination as a valid move
+        if (piecesOfSameType != null) {
+            for ((otherPiece, source) in piecesOfSameType) {
+                if (board.isMoveValid(otherPiece, source, destination)) {
+                    // Found a piece where the destination is a valid move, return its source
+                    return source
+                }
+            }
+        }
+
+        // No matching piece found
+        return null
     }
 
 

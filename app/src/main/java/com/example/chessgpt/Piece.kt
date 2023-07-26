@@ -19,7 +19,11 @@ enum class PieceType {
 
 enum class PieceColor {
     White,
-    Black
+    Black;
+
+    fun opposite(): PieceColor {
+        return if (this == White) Black else White
+    }
 }
 
 abstract class Piece(val type: PieceType, val color: PieceColor) {
