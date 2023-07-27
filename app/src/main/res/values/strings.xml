@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">ChessGPT</string>
+    <string name="guide">You play as white and ChatGPT plays as black.
+Drag and drop your piece from source to destination.
+After that you made your move, if ChatGPT did not made its move, wait 5-10 seconds and then simply just tap on one of your pieces so ChatGPT receives a new request to make a move.</string>
+    <string name="game_log">game log</string>
 </resources>

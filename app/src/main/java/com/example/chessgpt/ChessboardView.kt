@@ -1,16 +1,14 @@
 package com.example.chessgpt
 
-import android.util.Log
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
-import android.os.Build
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
-import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,13 +24,14 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
     private var pieceSize = 0f
     private var selectedPiece: Piece? = null
     private var selectedPieceAI: Piece? = null
-    private var aiTurn: Boolean = false
     private var selectedPieceCoordinate: Coordinate? = null
     private var highlightedCoordinate: Coordinate? = null
     private var aiPlayer: ChatGPTAIPlayer? = null
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.Main)
     private var moveNumber = 1
     private val moveHistory: MutableList<String> = mutableListOf()
+    private var aiMove: String? = null
+    private var moveMadeListener: ((List<String>, String?) -> Unit)? = null
 
 
 
@@ -172,9 +171,7 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
         } else {
             ""
         }
-
         val checkAI = if (chessboard?.isKingInCheck(selectedPieceAI!!.pieceColor().opposite()) == true) "+" else ""
-
         val castlingAI = if (selectedPieceAI is King) {
             if ((selectedPieceAI as King).pieceColor() == PieceColor.White) {
                 if (destinationCoordinateAI.col == 6 && destinationCoordinateAI.row == 7) "O-O" // Castling kingside for white
@@ -188,7 +185,6 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
         } else {
             ""
         }
-
         val destinationCoordinateNotationAI = if (castlingAI.isEmpty()) destinationCoordinateAI.getAlgebraicNotation() else ""
 
         val attackerPieceAI = if (castlingAI.isNotEmpty()){
@@ -198,16 +194,26 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
         }else{
             attackingPieceAI
         }
-
-
         moveNumber++
         val moveNotationAI = if (moveNumber % 2 == 0) {
             "${moveNumber / 2}. $attackerPieceAI$targetPieceSymbolAI$destinationCoordinateNotationAI$promotionAI$checkAI$castlingAI"
         } else {
             "$attackerPieceAI$targetPieceSymbolAI$destinationCoordinateNotationAI$promotionAI$checkAI$castlingAI"
         }
-
         moveHistory.add(moveNotationAI)
+    }
+
+
+    // Function to set the AI move and trigger the moveMadeListener
+    fun setAiMove(move: String) {
+        aiMove = move
+        moveMadeListener?.invoke(moveHistory, aiMove)
+    }
+
+
+    // Function to set the moveMadeListener
+    fun setOnMoveMadeListener(listener: (List<String>, String?) -> Unit) {
+        moveMadeListener = listener
     }
 
 
@@ -234,6 +240,9 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
                         val isCapture = targetPiece != null
                         addMoveToHistory(attackingPiece, isCapture, destinationCoordinate, sourceCoordinate)
 
+                        // Call the moveMadeListener to notify the MainActivity about the move
+                        moveMadeListener?.invoke(moveHistory, aiMove)
+
                     }
                 }
             }
@@ -247,11 +256,11 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
 
             // Trigger the AI player to suggest its move
             triggerAI()
-
         }
-
-
     }
+
+
+
 
     private fun triggerAI(){
         coroutineScope.launch {
@@ -261,10 +270,10 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
             Log.d("Board State", "Previous Moves: $boardState")
 
             // Call suggestMove with boardState
-            val aiMove = aiPlayer?.suggestMove(boardState)
+            aiMove = aiPlayer?.suggestMove(boardState)
             if (aiMove != null) {
                 Log.d("AI Move", "Suggested Move: $aiMove")
-                val aiMOveShortened = extractAIMoveFromMessage(aiMove)
+                val aiMOveShortened = extractAIMoveFromMessage(aiMove!!)
                 Log.d("aiMOveShortened", "aiMOveShortened: $aiMOveShortened")
                 val moveResult = aiMOveShortened?.let { extractMoveInfo(it) }
                 Log.d("AI Move Result", "AI Piece & Destination: $moveResult")
@@ -294,6 +303,9 @@ class ChessboardView(context: Context, attrs: AttributeSet?) : View(context, att
                                     val attackingPieceAI = selectedPieceAI?.getPieceNotation() ?: "null" // Get the notation of the attacking piece
                                     val isCaptureAI = targetPieceAI != null
                                     addMoveToHistoryAI(attackingPieceAI, isCaptureAI, destinationCoordinateAI, sourceCoordinateFromAI)
+
+                                    // Call the moveMadeListener to notify the MainActivity about the move
+                                    moveMadeListener?.invoke(moveHistory, aiMove)
 
                                     Log.i("adding AI move to list", "adding AI move to list: $attackingPieceAI $isCaptureAI $destinationCoordinateAI $sourceCoordinateFromAI")
 
